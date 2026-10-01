@@ -35,10 +35,10 @@ h1 {
 }
 
 .author {
-  color: #55bce6;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 5px;
+  margin-top: 5px;
+  color: #7f8b99;
+  font-size: 11px;
+  letter-spacing: 0.02em;
 }
 
 #app {
@@ -119,20 +119,119 @@ button:hover {
   margin-top: 18px;
 }
 
-@media(max-width:800px) {
+/* Tablet landscape: keep controls visible at the right */
+@media (min-width: 700px) and (max-width: 1180px) and (orientation: landscape) {
+  header {
+    padding: 10px 14px;
+  }
+
+  h1 {
+    font-size: 17px;
+  }
+
+  .sub {
+    font-size: 11px;
+  }
+
+  .author {
+    font-size: 10px;
+  }
+
+  #app {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    height: calc(100dvh - 78px);
+  }
+
+  #view {
+    min-height: 0;
+    height: 100%;
+  }
+
+  aside {
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .control {
+    margin-bottom: 14px;
+  }
+
+  .row {
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  button {
+    padding: 8px;
+  }
+
+  .note {
+    font-size: 11px;
+    margin-top: 12px;
+  }
+}
+
+/* Tablet portrait: scene first, compact controls immediately below */
+@media (min-width: 600px) and (max-width: 1180px) and (orientation: portrait) {
   #app {
     grid-template-columns: 1fr;
     height: auto;
   }
 
   #view {
-    height: 68vh;
-    min-height: 430px;
+    min-height: 0;
+    height: 56dvh;
   }
 
   aside {
     border-left: 0;
     border-top: 1px solid #303946;
+    padding: 14px 18px 22px;
+    overflow: visible;
+  }
+
+  .control {
+    margin-bottom: 14px;
+  }
+
+  .buttons {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Phone: vertical layout */
+@media (max-width: 599px) {
+  header {
+    padding: 10px 12px;
+  }
+
+  h1 {
+    font-size: 17px;
+  }
+
+  .sub {
+    font-size: 11px;
+  }
+
+  #app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  #view {
+    min-height: 0;
+    height: 54dvh;
+  }
+
+  aside {
+    border-left: 0;
+    border-top: 1px solid #303946;
+    padding: 14px;
+    overflow: visible;
+  }
+
+  .control {
+    margin-bottom: 16px;
   }
 }
 </style>
@@ -143,7 +242,6 @@ button:hover {
 
 <header>
   <h1>LiDAR — Dual Rotating Wedges</h1>
-  <div class="author">Interactive 3D simulation developed by Smail Hadjidj</div>
 
   <div class="sub">
     Interactive 3D educational simulation ·
@@ -151,6 +249,7 @@ button:hover {
     wheel = zoom ·
     right drag = pan
   </div>
+  <div class="author">Developed by Smail Hadjidj</div>
 </header>
 
 
@@ -379,23 +478,22 @@ function setResponsiveCamera() {
   const h = window.innerHeight;
   const portrait = h > w;
 
-  if (w <= 600) {
-    camera.position.set(
-      portrait ? 16.5 : 14.5,
-      portrait ? 9.5 : 7.5,
-      portrait ? 20.5 : 17.5
-    );
+  let position;
+
+  if (w < 600) {
+    position = portrait
+      ? [15.5, 8.0, 18.0]
+      : [13.5, 7.0, 15.5];
   } else if (w <= 1180) {
-    camera.position.set(
-      portrait ? 15.0 : 13.5,
-      portrait ? 8.5 : 7.0,
-      portrait ? 18.5 : 16.0
-    );
+    position = portrait
+      ? [14.5, 7.5, 17.0]
+      : [12.5, 6.4, 14.0];
   } else {
-    camera.position.set(9, 6, 10);
+    position = [9, 6, 10];
   }
 
-  controls.target.set(0.2, 0, 0);
+  camera.position.set(...position);
+  controls.target.set(0.15, 0.35, 0);
   controls.update();
 }
 
@@ -1274,6 +1372,13 @@ new ResizeObserver(
 
 
 resize();
+
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    resize();
+    setResponsiveCamera();
+  }, 180);
+});
 
 sync();
 
