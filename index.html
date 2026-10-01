@@ -7,9 +7,7 @@
   <title>Dual Wedge Beam Steering 3D</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -168,8 +166,9 @@
 
   <div class="info">
     Mouse: left-drag to rotate • wheel to zoom • right-drag to pan.<br><br>
-    Educational model: beam deflection is represented as the vector sum of the two rotating wedges.
-    Real optical deflection also depends on wedge angle, refractive index and detailed ray geometry.
+    Educational model: beam deflection is represented as the vector sum
+    of the two rotating wedges. Real optical deflection also depends on
+    wedge angle, refractive index and detailed ray geometry.
   </div>
 </div>
 
@@ -228,9 +227,7 @@ const light2 = new THREE.DirectionalLight(0x8bbcff, 2);
 light2.position.set(-5, -3, 6);
 scene.add(light2);
 
-/* -------------------------------------------------
-   Optical axis
-------------------------------------------------- */
+/* OPTICAL AXIS */
 
 const axisMaterial = new THREE.LineDashedMaterial({
   color: 0x63758d,
@@ -247,9 +244,7 @@ const axis = new THREE.Line(axisGeometry, axisMaterial);
 axis.computeLineDistances();
 scene.add(axis);
 
-/* -------------------------------------------------
-   Wedge geometry
-------------------------------------------------- */
+/* WEDGE GEOMETRY */
 
 function createWedgeGeometry() {
 
@@ -361,11 +356,6 @@ const wedge2 = new THREE.Mesh(
   wedgeMaterial2
 );
 
-/*
-Geometry is originally oriented along Z.
-Rotate it so the optical axis is X.
-*/
-
 wedge1.rotation.y = Math.PI / 2;
 wedge2.rotation.y = Math.PI / 2;
 
@@ -374,8 +364,6 @@ wedge2.position.x = 1.3;
 
 scene.add(wedge1);
 scene.add(wedge2);
-
-/* Edge outlines */
 
 function addEdges(mesh, color) {
 
@@ -396,9 +384,7 @@ function addEdges(mesh, color) {
 addEdges(wedge1, 0xa7e6ff);
 addEdges(wedge2, 0xd3c4ff);
 
-/* -------------------------------------------------
-   Target plane
-------------------------------------------------- */
+/* TARGET PLANE */
 
 const targetX = 5.6;
 
@@ -407,8 +393,9 @@ const planeGeometry = new THREE.PlaneGeometry(7, 7);
 const planeMaterial = new THREE.MeshBasicMaterial({
   color: 0x163047,
   transparent: true,
-  opacity: 0.22,
-  side: THREE.DoubleSide
+  opacity: 0.18,
+  side: THREE.DoubleSide,
+  depthWrite: false
 });
 
 const targetPlane = new THREE.Mesh(
@@ -421,7 +408,7 @@ targetPlane.rotation.y = Math.PI / 2;
 
 scene.add(targetPlane);
 
-/* Target grid */
+/* TARGET GRID */
 
 const grid = new THREE.GridHelper(
   7,
@@ -435,9 +422,7 @@ grid.rotation.z = Math.PI / 2;
 
 scene.add(grid);
 
-/* -------------------------------------------------
-   Laser source
-------------------------------------------------- */
+/* LASER SOURCE */
 
 const source = new THREE.Mesh(
   new THREE.SphereGeometry(0.12, 24, 24),
@@ -449,9 +434,7 @@ const source = new THREE.Mesh(
 source.position.set(-6.2, 0, 0);
 scene.add(source);
 
-/* -------------------------------------------------
-   Laser beam
-------------------------------------------------- */
+/* LASER BEAM */
 
 const beamMaterial = new THREE.LineBasicMaterial({
   color: 0xff3030
@@ -473,29 +456,30 @@ const beam = new THREE.Line(
 
 scene.add(beam);
 
-/* -------------------------------------------------
-   Laser spot
-------------------------------------------------- */
+/* LASER SPOT */
 
 const spot = new THREE.Mesh(
-  new THREE.SphereGeometry(0.11, 24, 24),
+  new THREE.SphereGeometry(0.13, 24, 24),
   new THREE.MeshBasicMaterial({
-    color: 0xff4040
+    color: 0xff4040,
+    depthTest: false
   })
 );
 
+spot.renderOrder = 20;
 scene.add(spot);
 
-/* -------------------------------------------------
-   Scan trace
-------------------------------------------------- */
+/* SCAN TRACE */
 
 let tracePoints = [];
 
 const traceGeometry = new THREE.BufferGeometry();
 
 const traceMaterial = new THREE.LineBasicMaterial({
-  color: 0xffc247
+  color: 0xffd54a,
+  depthTest: false,
+  transparent: true,
+  opacity: 1
 });
 
 const traceLine = new THREE.Line(
@@ -503,11 +487,10 @@ const traceLine = new THREE.Line(
   traceMaterial
 );
 
+traceLine.renderOrder = 15;
 scene.add(traceLine);
 
-/* -------------------------------------------------
-   UI
-------------------------------------------------- */
+/* UI */
 
 const w1Slider = document.getElementById('w1');
 const w2Slider = document.getElementById('w2');
@@ -535,8 +518,6 @@ phaseSlider.addEventListener('input', updateValues);
 
 updateValues();
 
-/* Speed ratio buttons */
-
 document.querySelectorAll('[data-ratio]').forEach(button => {
 
   button.addEventListener('click', () => {
@@ -552,9 +533,7 @@ document.querySelectorAll('[data-ratio]').forEach(button => {
   });
 });
 
-/* -------------------------------------------------
-   Pause
-------------------------------------------------- */
+/* PAUSE */
 
 let running = true;
 
@@ -568,9 +547,7 @@ pauseButton.addEventListener('click', () => {
     running ? 'Pause' : 'Start';
 });
 
-/* -------------------------------------------------
-   Clear trace
-------------------------------------------------- */
+/* CLEAR TRACE */
 
 function clearTrace() {
 
@@ -583,9 +560,7 @@ document
   .getElementById('clear')
   .addEventListener('click', clearTrace);
 
-/* -------------------------------------------------
-   Reset camera
-------------------------------------------------- */
+/* RESET CAMERA */
 
 document
   .getElementById('reset')
@@ -597,9 +572,7 @@ document
     controls.update();
   });
 
-/* -------------------------------------------------
-   Labels
-------------------------------------------------- */
+/* LABELS */
 
 function updateLabel(element, object, offsetY = 0) {
 
@@ -628,9 +601,7 @@ const label2 =
 const labelTarget =
   document.getElementById('labelTarget');
 
-/* -------------------------------------------------
-   Animation
-------------------------------------------------- */
+/* ANIMATION */
 
 const clock = new THREE.Clock();
 
@@ -664,11 +635,6 @@ function animate() {
     2 * Math.PI * w2 * simulationTime
     + phase;
 
-  /*
-    Preserve the initial Y rotation while
-    rotating each wedge around the optical axis.
-  */
-
   wedge1.rotation.set(
     angle1,
     Math.PI / 2,
@@ -681,9 +647,7 @@ function animate() {
     0
   );
 
-  /*
-    Pedagogical vector-sum model
-  */
+  /* PEDAGOGICAL VECTOR-SUM MODEL */
 
   const amplitude = 1.55;
 
@@ -695,16 +659,22 @@ function animate() {
     amplitude *
     (Math.sin(angle1) + Math.sin(angle2));
 
+  /*
+    IMPORTANT:
+    Spot and trace are positioned slightly IN FRONT
+    of the target plane so they remain visible.
+  */
+
+  const spotX = targetX + 0.10;
+  const traceX = targetX + 0.08;
+
   spot.position.set(
-    targetX - 0.06,
+    spotX,
     y,
     z
   );
 
-  /*
-    Beam path:
-    source -> wedge 1 -> wedge 2 -> target
-  */
+  /* BEAM PATH */
 
   const p = beamGeometry.attributes.position.array;
 
@@ -720,27 +690,25 @@ function animate() {
   p[7] = 0;
   p[8] = 0;
 
-  p[9]  = targetX - 0.06;
+  p[9] = spotX;
   p[10] = y;
   p[11] = z;
 
   beamGeometry.attributes.position.needsUpdate = true;
 
-  /*
-    Add points to scan trace
-  */
+  /* ADD POINTS TO VISIBLE SCAN TRACE */
 
   if (running) {
 
     tracePoints.push(
       new THREE.Vector3(
-        targetX - 0.08,
+        traceX,
         y,
         z
       )
     );
 
-    if (tracePoints.length > 500) {
+    if (tracePoints.length > 800) {
       tracePoints.shift();
     }
 
@@ -758,9 +726,7 @@ function animate() {
 
 animate();
 
-/* -------------------------------------------------
-   Resize
-------------------------------------------------- */
+/* RESIZE */
 
 window.addEventListener('resize', () => {
 
