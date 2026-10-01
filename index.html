@@ -119,7 +119,7 @@ button:hover {
   }
 
   #view {
-    height: 60vh;
+    height: 68vh;
   }
 
   aside {
@@ -324,11 +324,30 @@ const camera =
   );
 
 
-camera.position.set(
-  9,
-  6,
-  10
-);
+/* Responsive initial camera:
+   desktop keeps the original view;
+   iPad/mobile gets a wider, centered view. */
+function isCompactView() {
+  return window.matchMedia('(max-width: 1024px)').matches;
+}
+
+function setResponsiveCamera() {
+  if (isCompactView()) {
+    camera.position.set(
+      13.5,
+      8.5,
+      16.5
+    );
+  } else {
+    camera.position.set(
+      9,
+      6,
+      10
+    );
+  }
+}
+
+setResponsiveCamera();
 
 
 
@@ -1154,11 +1173,7 @@ document
 
 function resetCamera() {
 
-  camera.position.set(
-    9,
-    6,
-    10
-  );
+  setResponsiveCamera();
 
 
   controls.target.set(
