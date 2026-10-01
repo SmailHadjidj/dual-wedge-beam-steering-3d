@@ -1,746 +1,1481 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <title>Dual Wedge Beam Steering 3D</title>
+<title>LiDAR — Dual Rotating Wedges 3D</title>
 
-  <style>
-    * { box-sizing: border-box; }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #07111f;
-      color: white;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #10141b;
+  color: #eef3f8;
+}
 
-    #scene {
-      position: absolute;
-      inset: 0;
-    }
+header {
+  padding: 14px 18px;
+  background: #171d26;
+  border-bottom: 1px solid #303946;
+}
 
-    #panel {
-      position: absolute;
-      top: 18px;
-      left: 18px;
-      width: 320px;
-      padding: 18px;
-      border-radius: 14px;
-      background: rgba(8, 18, 32, 0.88);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 8px 30px rgba(0,0,0,.35);
-      z-index: 10;
-    }
+h1 {
+  font-size: 19px;
+  margin: 0 0 5px;
+}
 
-    h1 {
-      margin: 0 0 6px;
-      font-size: 19px;
-    }
+.sub {
+  color: #aeb8c5;
+  font-size: 13px;
+}
 
-    .subtitle {
-      margin-bottom: 18px;
-      color: #aebbd0;
-      font-size: 12px;
-      line-height: 1.4;
-    }
+#app {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 320px;
+  height: calc(100vh - 69px);
+}
 
-    .control {
-      margin-bottom: 15px;
-    }
+#view {
+  position: relative;
+  min-height: 520px;
+}
 
-    .control label {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
+#help {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  padding: 8px 10px;
+  background: #111923cc;
+  border: 1px solid #394554;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 2;
+}
 
-    input[type="range"] {
-      width: 100%;
-    }
+aside {
+  background: #171d26;
+  border-left: 1px solid #303946;
+  padding: 16px;
+  overflow: auto;
+}
 
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
-      margin-top: 10px;
-    }
+.control {
+  margin-bottom: 20px;
+}
 
-    button {
-      padding: 7px 10px;
-      border: 1px solid #40516a;
-      border-radius: 7px;
-      background: #16263b;
-      color: white;
-      cursor: pointer;
-    }
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
 
-    button:hover {
-      background: #223b5b;
-    }
+input[type=range] {
+  width: 100%;
+}
 
-    .info {
-      margin-top: 15px;
-      color: #9dacbf;
-      font-size: 11px;
-      line-height: 1.45;
-    }
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
 
-    #labels {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 5;
-    }
+button {
+  background: #232c38;
+  color: #eef3f8;
+  border: 1px solid #3a4655;
+  border-radius: 7px;
+  padding: 9px;
+  cursor: pointer;
+}
 
-    .label {
-      position: absolute;
-      padding: 4px 7px;
-      border-radius: 5px;
-      background: rgba(0,0,0,.55);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-  </style>
+button:hover {
+  background: #2c3745;
+}
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-    }
+.wide {
+  width: 100%;
+  margin-top: 7px;
+}
+
+.note {
+  font-size: 12px;
+  color: #aeb8c5;
+  line-height: 1.45;
+  margin-top: 18px;
+}
+
+@media(max-width:800px) {
+  #app {
+    grid-template-columns: 1fr;
+    height: auto;
   }
-  </script>
+
+  #view {
+    height: 60vh;
+  }
+
+  aside {
+    border-left: 0;
+    border-top: 1px solid #303946;
+  }
+}
+</style>
 </head>
+
 
 <body>
 
-<div id="scene"></div>
+<header>
+  <h1>LiDAR — Dual Rotating Wedges</h1>
 
-<div id="panel">
-  <h1>Dual Wedge Beam Steering — 3D</h1>
-
-  <div class="subtitle">
-    Interactive visualization of two rotating optical wedges and the resulting laser scan.
+  <div class="sub">
+    Interactive 3D educational simulation ·
+    mouse drag = orbit ·
+    wheel = zoom ·
+    right drag = pan
   </div>
+</header>
 
-  <div class="control">
-    <label>
-      <span>Wedge 1 speed ω₁</span>
-      <span id="w1Value">1.00 Hz</span>
-    </label>
-    <input id="w1" type="range" min="-3" max="3" step="0.05" value="1">
-  </div>
 
-  <div class="control">
-    <label>
-      <span>Wedge 2 speed ω₂</span>
-      <span id="w2Value">-1.00 Hz</span>
-    </label>
-    <input id="w2" type="range" min="-3" max="3" step="0.05" value="-1">
-  </div>
+<div id="app">
 
-  <div class="control">
-    <label>
-      <span>Relative phase φ</span>
-      <span id="phaseValue">0°</span>
-    </label>
-    <input id="phase" type="range" min="-180" max="180" step="1" value="0">
-  </div>
+  <!-- 3D VIEW -->
+  <main id="view">
 
-  <div class="buttons">
-    <button data-ratio="1,1">1 : 1</button>
-    <button data-ratio="1,-1">1 : −1</button>
-    <button data-ratio="1,-2">1 : −2</button>
-    <button data-ratio="1,3">1 : 3</button>
-  </div>
+    <div id="help">
+      Laser → Wedge 1 → Wedge 2 → Target plane
+    </div>
 
-  <div class="buttons">
-    <button id="pause">Pause</button>
-    <button id="clear">Clear trace</button>
-    <button id="reset">Reset view</button>
-  </div>
+  </main>
 
-  <div class="info">
-    Mouse: left-drag to rotate • wheel to zoom • right-drag to pan.<br><br>
-    Educational model: beam deflection is represented as the vector sum
-    of the two rotating wedges. Real optical deflection also depends on
-    wedge angle, refractive index and detailed ray geometry.
-  </div>
+
+  <!-- CONTROL PANEL -->
+  <aside>
+
+    <div class="control">
+
+      <div class="row">
+        <b>Wedge 1 speed ω₁</b>
+        <output id="o1">1.00 Hz</output>
+      </div>
+
+      <input
+        id="s1"
+        type="range"
+        min="-3"
+        max="3"
+        step=".05"
+        value="1">
+
+    </div>
+
+
+    <div class="control">
+
+      <div class="row">
+        <b>Wedge 2 speed ω₂</b>
+        <output id="o2">-1.00 Hz</output>
+      </div>
+
+      <input
+        id="s2"
+        type="range"
+        min="-3"
+        max="3"
+        step=".05"
+        value="-1">
+
+    </div>
+
+
+    <div class="control">
+
+      <div class="row">
+        <b>Relative phase φ</b>
+        <output id="op">0°</output>
+      </div>
+
+      <input
+        id="phase"
+        type="range"
+        min="-180"
+        max="180"
+        step="1"
+        value="0">
+
+    </div>
+
+
+    <div class="buttons">
+
+      <button data-r="1">
+        1 : 1
+      </button>
+
+      <button data-r="-1">
+        1 : −1
+      </button>
+
+      <button data-r="-2">
+        1 : −2
+      </button>
+
+      <button data-r="3">
+        1 : 3
+      </button>
+
+    </div>
+
+
+    <button id="play" class="wide">
+      Pause
+    </button>
+
+    <button id="clear" class="wide">
+      Clear trace
+    </button>
+
+    <button id="resetView" class="wide">
+      Reset camera
+    </button>
+
+    <button id="resetAll" class="wide">
+      Reset all
+    </button>
+
+
+    <div class="note">
+
+      The circular optical elements are wedge prisms:
+      one face is tilted.
+
+      <br><br>
+
+      The displayed beam deflection is a simplified
+      vector model intended to visualize how two
+      rotating wedges combine.
+
+    </div>
+
+  </aside>
+
 </div>
 
-<div id="labels">
-  <div class="label" id="label1">Wedge 1</div>
-  <div class="label" id="label2">Wedge 2</div>
-  <div class="label" id="labelTarget">Target plane</div>
-</div>
+
+<!-- THREE.JS -->
+
+<script type="importmap">
+
+{
+  "imports": {
+    "three":
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+
+    "three/addons/":
+    "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+  }
+}
+
+</script>
+
 
 <script type="module">
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const container = document.getElementById('scene');
+import {
+  OrbitControls
+}
+from 'three/addons/controls/OrbitControls.js';
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07111f);
 
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  100
+
+/* =====================================================
+   BASIC THREE.JS SCENE
+===================================================== */
+
+const host =
+  document.getElementById('view');
+
+
+const scene =
+  new THREE.Scene();
+
+
+scene.background =
+  new THREE.Color(0x10141b);
+
+
+
+const camera =
+  new THREE.PerspectiveCamera(
+    42,
+    1,
+    0.1,
+    100
+  );
+
+
+camera.position.set(
+  9,
+  6,
+  10
 );
 
-camera.position.set(10, 8, 10);
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
 
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
-container.appendChild(renderer.domElement);
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias: true
+  });
 
-const controls = new OrbitControls(camera, renderer.domElement);
+
+renderer.setPixelRatio(
+  Math.min(
+    devicePixelRatio,
+    2
+  )
+);
+
+
+host.appendChild(
+  renderer.domElement
+);
+
+
+
+/* =====================================================
+   CAMERA CONTROL
+===================================================== */
+
+const controls =
+  new OrbitControls(
+    camera,
+    renderer.domElement
+  );
+
 
 controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.target.set(0, 0, 0);
 
-controls.mouseButtons = {
-  LEFT: THREE.MOUSE.ROTATE,
-  MIDDLE: THREE.MOUSE.DOLLY,
-  RIGHT: THREE.MOUSE.PAN
-};
+controls.target.set(
+  0,
+  0,
+  0
+);
 
-scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
-const light1 = new THREE.DirectionalLight(0xffffff, 3);
-light1.position.set(5, 8, 5);
-scene.add(light1);
 
-const light2 = new THREE.DirectionalLight(0x8bbcff, 2);
-light2.position.set(-5, -3, 6);
-scene.add(light2);
+/* =====================================================
+   LIGHTS
+===================================================== */
 
-/* OPTICAL AXIS */
+scene.add(
+  new THREE.HemisphereLight(
+    0xffffff,
+    0x303040,
+    2.3
+  )
+);
 
-const axisMaterial = new THREE.LineDashedMaterial({
-  color: 0x63758d,
-  dashSize: 0.25,
-  gapSize: 0.18
-});
 
-const axisGeometry = new THREE.BufferGeometry().setFromPoints([
-  new THREE.Vector3(-7, 0, 0),
-  new THREE.Vector3(6, 0, 0)
-]);
-
-const axis = new THREE.Line(axisGeometry, axisMaterial);
-axis.computeLineDistances();
-scene.add(axis);
-
-/* WEDGE GEOMETRY */
-
-function createWedgeGeometry() {
-
-  const segments = 96;
-  const radius = 1.35;
-
-  const zBack = 0.48;
-  const zFrontBase = -0.48;
-  const tilt = 0.58;
-
-  const positions = [];
-  const indices = [];
-
-  for (let i = 0; i < segments; i++) {
-
-    const a = i / segments * Math.PI * 2;
-
-    const x = radius * Math.cos(a);
-    const y = radius * Math.sin(a);
-
-    const zFront = zFrontBase + tilt * (x / radius);
-
-    positions.push(
-      x, y, zFront,
-      x, y, zBack
-    );
-  }
-
-  for (let i = 0; i < segments; i++) {
-
-    const next = (i + 1) % segments;
-
-    const f1 = i * 2;
-    const b1 = i * 2 + 1;
-    const f2 = next * 2;
-    const b2 = next * 2 + 1;
-
-    indices.push(
-      f1, b1, f2,
-      f2, b1, b2
-    );
-  }
-
-  const frontCenter = positions.length / 3;
-  positions.push(0, 0, zFrontBase);
-
-  const backCenter = positions.length / 3;
-  positions.push(0, 0, zBack);
-
-  for (let i = 0; i < segments; i++) {
-
-    const next = (i + 1) % segments;
-
-    indices.push(
-      frontCenter,
-      next * 2,
-      i * 2
-    );
-
-    indices.push(
-      backCenter,
-      i * 2 + 1,
-      next * 2 + 1
-    );
-  }
-
-  const geometry = new THREE.BufferGeometry();
-
-  geometry.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(positions, 3)
+const sun =
+  new THREE.DirectionalLight(
+    0xffffff,
+    3
   );
 
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
 
-  return geometry;
-}
-
-const wedgeGeometry = createWedgeGeometry();
-
-const wedgeMaterial1 = new THREE.MeshPhysicalMaterial({
-  color: 0x5cc8ff,
-  transparent: true,
-  opacity: 0.48,
-  roughness: 0.12,
-  metalness: 0,
-  transmission: 0.15,
-  side: THREE.DoubleSide
-});
-
-const wedgeMaterial2 = new THREE.MeshPhysicalMaterial({
-  color: 0xa98cff,
-  transparent: true,
-  opacity: 0.48,
-  roughness: 0.12,
-  metalness: 0,
-  transmission: 0.15,
-  side: THREE.DoubleSide
-});
-
-const wedge1 = new THREE.Mesh(
-  wedgeGeometry,
-  wedgeMaterial1
-);
-
-const wedge2 = new THREE.Mesh(
-  wedgeGeometry,
-  wedgeMaterial2
-);
-
-wedge1.rotation.y = Math.PI / 2;
-wedge2.rotation.y = Math.PI / 2;
-
-wedge1.position.x = -1.6;
-wedge2.position.x = 1.3;
-
-scene.add(wedge1);
-scene.add(wedge2);
-
-function addEdges(mesh, color) {
-
-  const edges = new THREE.EdgesGeometry(mesh.geometry);
-
-  const line = new THREE.LineSegments(
-    edges,
-    new THREE.LineBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.45
-    })
-  );
-
-  mesh.add(line);
-}
-
-addEdges(wedge1, 0xa7e6ff);
-addEdges(wedge2, 0xd3c4ff);
-
-/* TARGET PLANE */
-
-const targetX = 5.6;
-
-const planeGeometry = new THREE.PlaneGeometry(7, 7);
-
-const planeMaterial = new THREE.MeshBasicMaterial({
-  color: 0x163047,
-  transparent: true,
-  opacity: 0.18,
-  side: THREE.DoubleSide,
-  depthWrite: false
-});
-
-const targetPlane = new THREE.Mesh(
-  planeGeometry,
-  planeMaterial
-);
-
-targetPlane.position.x = targetX;
-targetPlane.rotation.y = Math.PI / 2;
-
-scene.add(targetPlane);
-
-/* TARGET GRID */
-
-const grid = new THREE.GridHelper(
+sun.position.set(
+  4,
   7,
-  14,
-  0x6886a6,
-  0x30465e
+  5
 );
 
-grid.position.x = targetX - 0.015;
-grid.rotation.z = Math.PI / 2;
+
+scene.add(sun);
+
+
+
+/* =====================================================
+   FLOOR GRID
+===================================================== */
+
+const grid =
+  new THREE.GridHelper(
+    18,
+    18,
+    0x596273,
+    0x303743
+  );
+
+
+grid.position.y = -2.1;
+
 
 scene.add(grid);
 
-/* LASER SOURCE */
 
-const source = new THREE.Mesh(
-  new THREE.SphereGeometry(0.12, 24, 24),
-  new THREE.MeshBasicMaterial({
-    color: 0xff3030
-  })
+
+/* =====================================================
+   XYZ AXES
+===================================================== */
+
+const axes =
+  new THREE.AxesHelper(2);
+
+
+axes.position.set(
+  -6,
+  -2,
+  3
 );
 
-source.position.set(-6.2, 0, 0);
+
+scene.add(axes);
+
+
+
+/* =====================================================
+   CREATE CYLINDRICAL WEDGE GEOMETRY
+
+   Rear face = flat
+   Front face = tilted
+
+===================================================== */
+
+function wedgeGeometry() {
+
+  const n = 96;
+
+  const r = 1.55;
+
+  const front = -0.48;
+
+  const rear = 0.48;
+
+  const tilt = 0.62;
+
+
+  const p = [];
+
+  const ix = [];
+
+
+  for (
+    let i = 0;
+    i < n;
+    i++
+  ) {
+
+    const a =
+      i *
+      2 *
+      Math.PI /
+      n;
+
+
+    const x =
+      r *
+      Math.cos(a);
+
+
+    const y =
+      r *
+      Math.sin(a);
+
+
+    const zf =
+      front +
+      tilt *
+      (x / r);
+
+
+    p.push(
+      x,
+      y,
+      zf,
+
+      x,
+      y,
+      rear
+    );
+  }
+
+
+
+  /* SIDE SURFACE */
+
+  for (
+    let i = 0;
+    i < n;
+    i++
+  ) {
+
+    const j =
+      (i + 1) % n;
+
+
+    const af =
+      2 * i;
+
+
+    const ar =
+      af + 1;
+
+
+    const bf =
+      2 * j;
+
+
+    const br =
+      bf + 1;
+
+
+    ix.push(
+      af,
+      bf,
+      br,
+
+      af,
+      br,
+      ar
+    );
+  }
+
+
+
+  /* FRONT CENTER */
+
+  const cf =
+    p.length / 3;
+
+
+  p.push(
+    0,
+    0,
+    front
+  );
+
+
+
+  /* REAR CENTER */
+
+  const cr =
+    p.length / 3;
+
+
+  p.push(
+    0,
+    0,
+    rear
+  );
+
+
+
+  /* FRONT + REAR FACES */
+
+  for (
+    let i = 0;
+    i < n;
+    i++
+  ) {
+
+    const j =
+      (i + 1) % n;
+
+
+    ix.push(
+      cf,
+      2 * j,
+      2 * i
+    );
+
+
+    ix.push(
+      cr,
+      2 * i + 1,
+      2 * j + 1
+    );
+  }
+
+
+
+  const g =
+    new THREE.BufferGeometry();
+
+
+  g.setAttribute(
+    'position',
+
+    new THREE.Float32BufferAttribute(
+      p,
+      3
+    )
+  );
+
+
+  g.setIndex(ix);
+
+
+  g.computeVertexNormals();
+
+
+  return g;
+}
+
+
+
+/* =====================================================
+   CREATE ONE WEDGE
+===================================================== */
+
+function prism(
+  x,
+  color
+) {
+
+  const material =
+    new THREE.MeshPhysicalMaterial({
+
+      color: color,
+
+      transparent: true,
+
+      opacity: 0.48,
+
+      roughness: 0.12,
+
+      side:
+        THREE.DoubleSide,
+
+      depthWrite:
+        false
+    });
+
+
+
+  const mesh =
+    new THREE.Mesh(
+
+      wedgeGeometry(),
+
+      material
+
+    );
+
+
+  mesh.position.x = x;
+
+
+  mesh.rotation.y =
+    Math.PI / 2;
+
+
+  scene.add(mesh);
+
+
+
+  /* EDGE OUTLINE */
+
+  const edge =
+    new THREE.LineSegments(
+
+      new THREE.EdgesGeometry(
+        mesh.geometry
+      ),
+
+      new THREE.LineBasicMaterial({
+
+        color:
+          0xd9f4ff,
+
+        transparent:
+          true,
+
+        opacity:
+          0.65
+      })
+    );
+
+
+  mesh.add(edge);
+
+
+  return mesh;
+}
+
+
+
+/* =====================================================
+   TWO WEDGES
+===================================================== */
+
+const w1 =
+  prism(
+    -1.7,
+    0x55bce6
+  );
+
+
+const w2 =
+  prism(
+    1.7,
+    0x6fd6a9
+  );
+
+
+
+/* =====================================================
+   TARGET PLANE
+===================================================== */
+
+const target =
+  new THREE.Mesh(
+
+    new THREE.PlaneGeometry(
+      5.6,
+      5.6
+    ),
+
+    new THREE.MeshBasicMaterial({
+
+      color:
+        0x536070,
+
+      transparent:
+        true,
+
+      opacity:
+        0.28,
+
+      side:
+        THREE.DoubleSide
+    })
+  );
+
+
+target.position.x = 6;
+
+
+target.rotation.y =
+  -Math.PI / 2;
+
+
+scene.add(target);
+
+
+
+/* TARGET GRID */
+
+const targetGrid =
+  new THREE.GridHelper(
+
+    5.6,
+
+    10,
+
+    0x9aa7b7,
+
+    0x596473
+  );
+
+
+targetGrid.position.x =
+  5.98;
+
+
+targetGrid.rotation.z =
+  Math.PI / 2;
+
+
+scene.add(
+  targetGrid
+);
+
+
+
+/* =====================================================
+   LASER SOURCE
+===================================================== */
+
+const source =
+  new THREE.Mesh(
+
+    new THREE.CylinderGeometry(
+      0.35,
+      0.35,
+      1.2,
+      32
+    ),
+
+    new THREE.MeshStandardMaterial({
+
+      color:
+        0x5d6672,
+
+      metalness:
+        0.5,
+
+      roughness:
+        0.4
+    })
+  );
+
+
+source.rotation.z =
+  Math.PI / 2;
+
+
+source.position.x =
+  -6.5;
+
+
 scene.add(source);
 
-/* LASER BEAM */
 
-const beamMaterial = new THREE.LineBasicMaterial({
-  color: 0xff3030
-});
 
-const beamGeometry = new THREE.BufferGeometry();
+/* =====================================================
+   LASER BEAM
+===================================================== */
 
-const beamPositions = new Float32Array(12);
+const beamMat =
+  new THREE.LineBasicMaterial({
 
-beamGeometry.setAttribute(
-  'position',
-  new THREE.BufferAttribute(beamPositions, 3)
-);
+    color:
+      0xff4655
+  });
 
-const beam = new THREE.Line(
-  beamGeometry,
-  beamMaterial
-);
+
+const beamGeom =
+  new THREE.BufferGeometry();
+
+
+const beam =
+  new THREE.Line(
+
+    beamGeom,
+
+    beamMat
+  );
+
 
 scene.add(beam);
 
-/* LASER SPOT */
 
-const spot = new THREE.Mesh(
-  new THREE.SphereGeometry(0.13, 24, 24),
-  new THREE.MeshBasicMaterial({
-    color: 0xff4040,
-    depthTest: false
-  })
-);
 
-spot.renderOrder = 20;
+/* =====================================================
+   LASER SPOT
+===================================================== */
+
+const spot =
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+      0.11,
+      18,
+      18
+    ),
+
+    new THREE.MeshBasicMaterial({
+
+      color:
+        0xff4655
+    })
+  );
+
+
 scene.add(spot);
 
-/* SCAN TRACE */
 
-let tracePoints = [];
 
-const traceGeometry = new THREE.BufferGeometry();
+/* =====================================================
+   TARGET TRACE
+===================================================== */
 
-const traceMaterial = new THREE.LineBasicMaterial({
-  color: 0xffd54a,
-  depthTest: false,
-  transparent: true,
-  opacity: 1
-});
+let tracePts = [];
 
-const traceLine = new THREE.Line(
-  traceGeometry,
-  traceMaterial
-);
+let traceLine = null;
 
-traceLine.renderOrder = 15;
-scene.add(traceLine);
 
-/* UI */
+const traceMat =
+  new THREE.LineBasicMaterial({
 
-const w1Slider = document.getElementById('w1');
-const w2Slider = document.getElementById('w2');
-const phaseSlider = document.getElementById('phase');
+    color:
+      0xff7b84,
 
-const w1Value = document.getElementById('w1Value');
-const w2Value = document.getElementById('w2Value');
-const phaseValue = document.getElementById('phaseValue');
+    transparent:
+      true,
 
-function updateValues() {
+    opacity:
+      0.78
+  });
 
-  w1Value.textContent =
-    Number(w1Slider.value).toFixed(2) + ' Hz';
 
-  w2Value.textContent =
-    Number(w2Slider.value).toFixed(2) + ' Hz';
 
-  phaseValue.textContent =
-    Number(phaseSlider.value).toFixed(0) + '°';
+function rebuildTrace() {
+
+  if (traceLine) {
+
+    scene.remove(
+      traceLine
+    );
+
+
+    traceLine
+      .geometry
+      .dispose();
+
+
+    traceLine = null;
+  }
+
+
+
+  if (
+    tracePts.length > 1
+  ) {
+
+    traceLine =
+      new THREE.Line(
+
+        new THREE
+          .BufferGeometry()
+          .setFromPoints(
+            tracePts
+          ),
+
+        traceMat
+      );
+
+
+    scene.add(
+      traceLine
+    );
+  }
 }
 
-w1Slider.addEventListener('input', updateValues);
-w2Slider.addEventListener('input', updateValues);
-phaseSlider.addEventListener('input', updateValues);
 
-updateValues();
 
-document.querySelectorAll('[data-ratio]').forEach(button => {
+/* =====================================================
+   USER CONTROLS
+===================================================== */
 
-  button.addEventListener('click', () => {
+const s1 =
+  document.getElementById(
+    's1'
+  );
 
-    const values =
-      button.dataset.ratio.split(',').map(Number);
 
-    w1Slider.value = values[0];
-    w2Slider.value = values[1];
+const s2 =
+  document.getElementById(
+    's2'
+  );
 
-    updateValues();
-    clearTrace();
-  });
-});
 
-/* PAUSE */
+const ph =
+  document.getElementById(
+    'phase'
+  );
 
-let running = true;
 
-const pauseButton = document.getElementById('pause');
+const o1 =
+  document.getElementById(
+    'o1'
+  );
 
-pauseButton.addEventListener('click', () => {
 
-  running = !running;
+const o2 =
+  document.getElementById(
+    'o2'
+  );
 
-  pauseButton.textContent =
-    running ? 'Pause' : 'Start';
-});
 
-/* CLEAR TRACE */
+const op =
+  document.getElementById(
+    'op'
+  );
+
+
+
+function sync() {
+
+  o1.value =
+    (+s1.value)
+      .toFixed(2)
+    + ' Hz';
+
+
+  o2.value =
+    (+s2.value)
+      .toFixed(2)
+    + ' Hz';
+
+
+  op.value =
+    (+ph.value)
+      .toFixed(0)
+    + '°';
+}
+
+
 
 function clearTrace() {
 
-  tracePoints = [];
+  tracePts = [];
 
-  traceGeometry.setFromPoints(tracePoints);
+  rebuildTrace();
 }
 
-document
-  .getElementById('clear')
-  .addEventListener('click', clearTrace);
 
-/* RESET CAMERA */
 
-document
-  .getElementById('reset')
-  .addEventListener('click', () => {
+[
+  s1,
+  s2,
+  ph
+]
+.forEach(
+  element => {
 
-    camera.position.set(10, 8, 10);
-    controls.target.set(0, 0, 0);
+    element
+      .addEventListener(
+        'input',
+        () => {
 
-    controls.update();
-  });
+          sync();
 
-/* LABELS */
+          clearTrace();
 
-function updateLabel(element, object, offsetY = 0) {
-
-  const position = object.position.clone();
-
-  position.project(camera);
-
-  const x =
-    (position.x * 0.5 + 0.5) *
-    window.innerWidth;
-
-  const y =
-    (-position.y * 0.5 + 0.5) *
-    window.innerHeight;
-
-  element.style.transform =
-    `translate(-50%, -50%) translate(${x}px, ${y + offsetY}px)`;
-}
-
-const label1 =
-  document.getElementById('label1');
-
-const label2 =
-  document.getElementById('label2');
-
-const labelTarget =
-  document.getElementById('labelTarget');
-
-/* ANIMATION */
-
-const clock = new THREE.Clock();
-
-let simulationTime = 0;
-
-function animate() {
-
-  requestAnimationFrame(animate);
-
-  const dt = clock.getDelta();
-
-  if (running) {
-    simulationTime += dt;
+        }
+      );
   }
+);
 
-  const w1 =
-    Number(w1Slider.value);
 
-  const w2 =
-    Number(w2Slider.value);
 
-  const phase =
-    THREE.MathUtils.degToRad(
-      Number(phaseSlider.value)
+/* =====================================================
+   SPEED RATIO BUTTONS
+===================================================== */
+
+document
+.querySelectorAll(
+  '[data-r]'
+)
+.forEach(
+  button => {
+
+    button.onclick =
+      () => {
+
+        s2.value =
+          Math.max(
+
+            -3,
+
+            Math.min(
+
+              3,
+
+              (+s1.value) *
+              (+button.dataset.r)
+
+            )
+          );
+
+
+        sync();
+
+        clearTrace();
+      };
+  }
+);
+
+
+
+/* =====================================================
+   PLAY / PAUSE
+===================================================== */
+
+let running = true;
+
+let t = 0;
+
+let last =
+  performance.now();
+
+let sample = 0;
+
+
+
+document
+.getElementById(
+  'play'
+)
+.onclick =
+  event => {
+
+    running =
+      !running;
+
+
+    event
+      .currentTarget
+      .textContent =
+        running
+        ? 'Pause'
+        : 'Play';
+  };
+
+
+
+/* =====================================================
+   CLEAR
+===================================================== */
+
+document
+.getElementById(
+  'clear'
+)
+.onclick =
+  clearTrace;
+
+
+
+/* =====================================================
+   RESET CAMERA
+===================================================== */
+
+function resetCamera() {
+
+  camera.position.set(
+    9,
+    6,
+    10
+  );
+
+
+  controls.target.set(
+    0,
+    0,
+    0
+  );
+
+
+  controls.update();
+}
+
+
+
+document
+.getElementById(
+  'resetView'
+)
+.onclick =
+  resetCamera;
+
+
+
+/* =====================================================
+   RESET EVERYTHING
+===================================================== */
+
+document
+.getElementById(
+  'resetAll'
+)
+.onclick =
+  () => {
+
+    s1.value = 1;
+
+    s2.value = -1;
+
+    ph.value = 0;
+
+    t = 0;
+
+    running = true;
+
+
+    document
+      .getElementById(
+        'play'
+      )
+      .textContent =
+        'Pause';
+
+
+    sync();
+
+    clearTrace();
+
+    resetCamera();
+  };
+
+
+
+/* =====================================================
+   RESPONSIVE CANVAS
+===================================================== */
+
+function resize() {
+
+  const w =
+    host.clientWidth;
+
+
+  const h =
+    host.clientHeight;
+
+
+  renderer.setSize(
+    w,
+    h,
+    false
+  );
+
+
+  camera.aspect =
+    w / h;
+
+
+  camera
+    .updateProjectionMatrix();
+}
+
+
+
+new ResizeObserver(
+  resize
+)
+.observe(host);
+
+
+resize();
+
+sync();
+
+
+
+/* =====================================================
+   ANIMATION
+
+   Simplified Risley-prism vector model.
+
+   Each rotating wedge contributes one
+   angular-deflection vector.
+
+   Resulting target displacement =
+   vector sum of both contributions.
+
+===================================================== */
+
+function frame(now) {
+
+  requestAnimationFrame(
+    frame
+  );
+
+
+  const dt =
+    Math.min(
+
+      0.035,
+
+      (now - last) /
+      1000
     );
 
-  const angle1 =
-    2 * Math.PI * w1 * simulationTime;
 
-  const angle2 =
-    2 * Math.PI * w2 * simulationTime
-    + phase;
+  last = now;
 
-  wedge1.rotation.set(
-    angle1,
-    Math.PI / 2,
-    0
-  );
 
-  wedge2.rotation.set(
-    angle2,
-    Math.PI / 2,
-    0
-  );
-
-  /* PEDAGOGICAL VECTOR-SUM MODEL */
-
-  const amplitude = 1.55;
-
-  const y =
-    amplitude *
-    (Math.cos(angle1) + Math.cos(angle2));
-
-  const z =
-    amplitude *
-    (Math.sin(angle1) + Math.sin(angle2));
-
-  /*
-    IMPORTANT:
-    Spot and trace are positioned slightly IN FRONT
-    of the target plane so they remain visible.
-  */
-
-  const spotX = targetX + 0.10;
-  const traceX = targetX + 0.08;
-
-  spot.position.set(
-    spotX,
-    y,
-    z
-  );
-
-  /* BEAM PATH */
-
-  const p = beamGeometry.attributes.position.array;
-
-  p[0] = -6.2;
-  p[1] = 0;
-  p[2] = 0;
-
-  p[3] = -1.6;
-  p[4] = 0;
-  p[5] = 0;
-
-  p[6] = 1.3;
-  p[7] = 0;
-  p[8] = 0;
-
-  p[9] = spotX;
-  p[10] = y;
-  p[11] = z;
-
-  beamGeometry.attributes.position.needsUpdate = true;
-
-  /* ADD POINTS TO VISIBLE SCAN TRACE */
 
   if (running) {
 
-    tracePoints.push(
+    t += dt;
+
+  }
+
+
+
+  /* WEDGE ANGLES */
+
+  const a =
+    2 *
+    Math.PI *
+    (+s1.value) *
+    t;
+
+
+  const b =
+    2 *
+    Math.PI *
+    (+s2.value) *
+    t
+    +
+    (+ph.value) *
+    Math.PI /
+    180;
+
+
+
+  /* ROTATE WEDGES */
+
+  w1.rotation.set(
+    a,
+    Math.PI / 2,
+    0,
+    'XYZ'
+  );
+
+
+  w2.rotation.set(
+    b,
+    Math.PI / 2,
+    0,
+    'XYZ'
+  );
+
+
+
+  /* ===================================================
+     VECTOR SUM
+  =================================================== */
+
+  const A =
+    1.48;
+
+
+  const y =
+    A *
+    (
+      Math.cos(a)
+      +
+      Math.cos(b)
+    );
+
+
+  const z =
+    A *
+    (
+      Math.sin(a)
+      +
+      Math.sin(b)
+    );
+
+
+
+  /* TARGET SPOT */
+
+  spot.position.set(
+
+    5.88,
+
+    y,
+
+    z
+
+  );
+
+
+
+  /* LASER PATH */
+
+  beamGeom
+    .setFromPoints([
+
       new THREE.Vector3(
-        traceX,
+        -5.9,
+        0,
+        0
+      ),
+
+      new THREE.Vector3(
+        -1.7,
+        0,
+        0
+      ),
+
+      new THREE.Vector3(
+        1.7,
+        y * 0.14,
+        z * 0.14
+      ),
+
+      new THREE.Vector3(
+        5.88,
         y,
         z
       )
+
+    ]);
+
+
+
+  /* TARGET TRACE */
+
+  if (
+    running &&
+    now - sample > 42
+  ) {
+
+    sample = now;
+
+
+    tracePts.push(
+
+      new THREE.Vector3(
+
+        5.86,
+
+        y,
+
+        z
+
+      )
     );
 
-    if (tracePoints.length > 800) {
-      tracePoints.shift();
+
+    if (
+      tracePts.length >
+      420
+    ) {
+
+      tracePts.shift();
+
     }
 
-    traceGeometry.setFromPoints(tracePoints);
+
+    rebuildTrace();
   }
+
+
 
   controls.update();
 
-  updateLabel(label1, wedge1, -55);
-  updateLabel(label2, wedge2, -55);
-  updateLabel(labelTarget, targetPlane, -180);
 
-  renderer.render(scene, camera);
+  renderer.render(
+
+    scene,
+
+    camera
+
+  );
 }
 
-animate();
 
-/* RESIZE */
 
-window.addEventListener('resize', () => {
-
-  camera.aspect =
-    window.innerWidth /
-    window.innerHeight;
-
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
-  );
-});
+requestAnimationFrame(
+  frame
+);
 
 </script>
 
